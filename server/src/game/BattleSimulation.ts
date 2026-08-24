@@ -32,6 +32,7 @@ const STARTING_GOLD = 100;
 interface PoisonStack {
   dps: number;
   until: number;
+  sourcePlacementId: string;
 }
 
 export interface PlaceMonsterParams {
@@ -111,6 +112,9 @@ export class BattleSimulation {
     }
     if (this.placedMonsters.some((m) => m.x === params.x && m.y === params.y)) {
       return { error: "Tile already occupied" };
+    }
+    if (this.placedMonsters.some((m) => m.instanceId === params.instanceId)) {
+      return { error: "That monster is already deployed" };
     }
     const def = getMonsterDefinition(params.monsterId);
     const rarityMult = RARITY_CONFIG[def.rarity].statMultiplier;
@@ -299,7 +303,7 @@ export class BattleSimulation {
       const active = stacks.filter((s) => s.until > now);
       this.poisonStacks.set(enemy.enemyInstanceId, active);
       for (const stack of active) {
-        this.damageEnemy(enemy, stack.dps * dt, undefined);
+        this.damageEnemy(enemy, stack.dps * dt, stack.sourcePlacementId);
       }
     }
   }
@@ -430,7 +434,11 @@ export class BattleSimulation {
         const targets = findEnemiesInRange({ x: monster.x, y: monster.y }, radius, this.enemies, this.map);
         for (const t of targets) {
           const stacks = this.poisonStacks.get(t.enemy.enemyInstanceId) ?? [];
-          stacks.push({ dps: ability.power * powerMultiplier, until: now + (ability.durationSeconds ?? 3) });
+          stacks.push({
+            dps: ability.power * powerMultiplier,
+            until: now + (ability.durationSeconds ?? 3),
+            sourcePlacementId: monster.placementId,
+          });
           this.poisonStacks.set(t.enemy.enemyInstanceId, stacks);
         }
         break;

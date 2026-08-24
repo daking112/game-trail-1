@@ -62,8 +62,9 @@ export class BattleRoom {
   }
 
   placeMonster(ownerId: string, instanceId: string, monsterId: string, level: number, traitId: string, x: number, y: number) {
-    this.instanceOwner.set(instanceId, ownerId);
-    return this.simulation.placeMonster({ ownerId, instanceId, monsterId, level, traitId, x, y });
+    const result = this.simulation.placeMonster({ ownerId, instanceId, monsterId, level, traitId, x, y });
+    if (!("error" in result)) this.instanceOwner.set(instanceId, ownerId);
+    return result;
   }
 
   setTargetingMode(placementId: string, mode: TargetingMode): void {
@@ -117,13 +118,14 @@ export class BattleRoom {
   private async handleBattleEnd(victory: boolean, goldEarned: number, xpAwarded: Record<string, number>): Promise<void> {
     this.stop();
 
-    const goldPerPlayer = victory ? Math.floor(goldEarned / Math.max(1, this.instanceOwner.size > 0 ? new Set(this.instanceOwner.values()).size : 1)) : 0;
-    const rewardedOwners = new Set<string>();
+    // Every player who placed at least one monster shares the gold reward
+    // equally, regardless of whether their monster happened to land a kill.
+    const participantIds = new Set(this.instanceOwner.values());
+    const goldPerPlayer = victory ? Math.floor(goldEarned / Math.max(1, participantIds.size)) : 0;
 
     for (const [instanceId, xp] of Object.entries(xpAwarded)) {
       const ownerId = this.instanceOwner.get(instanceId);
       if (!ownerId) continue;
-      rewardedOwners.add(ownerId);
 
       const instance = await this.repository.getMonsterInstance(instanceId);
       if (!instance) continue;
@@ -138,7 +140,7 @@ export class BattleRoom {
       }
     }
 
-    for (const ownerId of rewardedOwners) {
+    for (const ownerId of participantIds) {
       const wallet = await this.repository.addCurrency(ownerId, { gold: goldPerPlayer });
       this.io.to(ownerId).emit("wallet:update", { wallet });
       this.io.to(ownerId).emit("collection:update", { monsters: await this.repository.getCollection(ownerId) });
