@@ -1,7 +1,10 @@
 import Phaser from "phaser";
 import {
+  BattleStateSnapshot,
   CombatEvent,
   ENEMIES,
+  EnemyState,
+  GridCoord,
   MapDefinition,
   TargetingMode,
   VERDANT_FOREST_MAP,
@@ -35,6 +38,15 @@ export class BattleScene extends Phaser.Scene {
   private eventQueue: CombatEvent[] = [];
   private popups: { obj: Phaser.GameObjects.Text; born: number }[] = [];
   private onCombatEvent = (event: CombatEvent) => this.eventQueue.push(event);
+
+  // Render-delay interpolation state: rather than snapping enemies to a new
+  // grid position every time a ~100ms server tick arrives, we glide from the
+  // previous snapshot's positions to the latest one over that same interval.
+  private lastSnapshotRef: BattleStateSnapshot | null = null;
+  private previousEnemies: EnemyState[] = [];
+  private currentEnemies: EnemyState[] = [];
+  private previousSnapshotAt = 0;
+  private latestSnapshotAt = 0;
 
   constructor() {
     super("BattleScene");
@@ -147,8 +159,18 @@ export class BattleScene extends Phaser.Scene {
 
     if (!snapshot) return;
 
+    if (snapshot !== this.lastSnapshotRef) {
+      this.previousEnemies = this.currentEnemies;
+      this.previousSnapshotAt = this.latestSnapshotAt;
+      this.currentEnemies = snapshot.enemies;
+      this.latestSnapshotAt = this.time.now;
+      this.lastSnapshotRef = snapshot;
+    }
+    const tickInterval = Math.max(16, this.latestSnapshotAt - this.previousSnapshotAt);
+    const interpT = Phaser.Math.Clamp((this.time.now - this.latestSnapshotAt) / tickInterval, 0, 1);
+
     for (const enemy of snapshot.enemies) {
-      const pos = getEnemyPosition(enemy, this.map);
+      const pos = this.interpolatedEnemyPosition(enemy, interpT);
       const { px, py } = gridToPixel(pos.x, pos.y);
       const def = ENEMIES[enemy.enemyId];
       const radius = enemy.isBoss ? 20 : 11;
@@ -208,6 +230,17 @@ export class BattleScene extends Phaser.Scene {
       label.setOrigin(0.5);
       this.labelTexts.push(label);
     }
+  }
+
+  private interpolatedEnemyPosition(enemy: EnemyState, t: number): GridCoord {
+    const currPos = getEnemyPosition(enemy, this.map);
+    const prev = this.previousEnemies.find((e) => e.enemyInstanceId === enemy.enemyInstanceId);
+    if (!prev) return currPos; // just spawned -- nothing to glide in from
+    const prevPos = getEnemyPosition(prev, this.map);
+    return {
+      x: Phaser.Math.Linear(prevPos.x, currPos.x, t),
+      y: Phaser.Math.Linear(prevPos.y, currPos.y, t),
+    };
   }
 
   private drainCombatEvents(): void {
