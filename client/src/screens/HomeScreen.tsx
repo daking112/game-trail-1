@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { socket } from "../network/socket";
+import { getSavedUsername, saveUsername } from "../network/session";
 import { useGameStore } from "../state/gameStore";
 
-const USERNAME_KEY = "monsterfall.username";
-
 export default function HomeScreen() {
-  const [username, setUsername] = useState(() => localStorage.getItem(USERNAME_KEY) ?? "");
+  const [username, setUsername] = useState(getSavedUsername);
   const [joinCode, setJoinCode] = useState("");
   const setScreen = useGameStore((s) => s.setScreen);
   const lobbyError = useGameStore((s) => s.lobbyError);
@@ -13,7 +12,7 @@ export default function HomeScreen() {
 
   function persistUsername(name: string) {
     setUsername(name);
-    localStorage.setItem(USERNAME_KEY, name);
+    saveUsername(name);
   }
 
   function identifyAndGo(target: "collection" | "codex" | "hatchery") {

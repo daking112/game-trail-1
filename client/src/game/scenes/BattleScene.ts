@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import {
+  CombatEvent,
   ENEMIES,
   MapDefinition,
   TargetingMode,
@@ -31,6 +32,9 @@ export class BattleScene extends Phaser.Scene {
   private map: MapDefinition = VERDANT_FOREST_MAP;
   private entityLayer!: Phaser.GameObjects.Graphics;
   private hoverTile: { x: number; y: number } | null = null;
+  private eventQueue: CombatEvent[] = [];
+  private popups: { obj: Phaser.GameObjects.Text; born: number }[] = [];
+  private onCombatEvent = (event: CombatEvent) => this.eventQueue.push(event);
 
   constructor() {
     super("BattleScene");
@@ -49,6 +53,10 @@ export class BattleScene extends Phaser.Scene {
       const { x, y } = pixelToGrid(p.x, p.y);
       this.handleTileClick(x, y);
     });
+
+    socket.on("battle:event", this.onCombatEvent);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => socket.off("battle:event", this.onCombatEvent));
+    this.events.once(Phaser.Scenes.Events.DESTROY, () => socket.off("battle:event", this.onCombatEvent));
   }
 
   private handleTileClick(x: number, y: number): void {
@@ -125,6 +133,9 @@ export class BattleScene extends Phaser.Scene {
     const g = this.entityLayer;
     g.clear();
 
+    this.drainCombatEvents();
+    this.updatePopups();
+
     if (store.selectedForPlacementId && this.hoverTile) {
       const valid =
         isPlacementTile(this.map, this.hoverTile.x, this.hoverTile.y) &&
@@ -197,6 +208,113 @@ export class BattleScene extends Phaser.Scene {
       label.setOrigin(0.5);
       this.labelTexts.push(label);
     }
+  }
+
+  private drainCombatEvents(): void {
+    const events = this.eventQueue.splice(0, this.eventQueue.length);
+    for (const event of events) this.handleCombatEvent(event);
+  }
+
+  private handleCombatEvent(event: CombatEvent): void {
+    switch (event.type) {
+      case "attack": {
+        if (event.damage !== undefined && event.x !== undefined && event.y !== undefined) {
+          const { px, py } = gridToPixel(event.x, event.y);
+          this.spawnDamagePopup(px, py, `-${event.damage}`, "#ffd166");
+        }
+        break;
+      }
+      case "ability": {
+        if (event.x !== undefined && event.y !== undefined) {
+          const { px, py } = gridToPixel(event.x, event.y);
+          this.spawnBurst(px, py, 0x80deea, 30);
+        }
+        break;
+      }
+      case "ultimate": {
+        if (event.x !== undefined && event.y !== undefined) {
+          const { px, py } = gridToPixel(event.x, event.y);
+          this.spawnBurst(px, py, 0xffd600, 46);
+        }
+        break;
+      }
+      case "death": {
+        if (event.x !== undefined && event.y !== undefined) {
+          const { px, py } = gridToPixel(event.x, event.y);
+          this.spawnBurst(px, py, 0xff8a65, 22);
+        }
+        break;
+      }
+      case "coreHit": {
+        const core = this.map.path[this.map.path.length - 1];
+        const { px, py } = gridToPixel(core.x, core.y);
+        if (event.damage !== undefined) this.spawnDamagePopup(px, py, `-${event.damage}`, "#ff5d5d");
+        this.cameras.main.shake(150, 0.006);
+        this.cameras.main.flash(120, 255, 80, 80, false);
+        break;
+      }
+      case "bossSpawn": {
+        this.cameras.main.shake(350, 0.01);
+        this.spawnBanner("BOSS INCOMING");
+        break;
+      }
+    }
+  }
+
+  private spawnDamagePopup(px: number, py: number, text: string, color: string): void {
+    const obj = this.add.text(px + (Math.random() * 14 - 7), py - 14, text, {
+      fontSize: "13px",
+      color,
+      fontStyle: "bold",
+    });
+    obj.setOrigin(0.5);
+    this.popups.push({ obj, born: this.time.now });
+  }
+
+  private updatePopups(): void {
+    const now = this.time.now;
+    const lifespan = 700;
+    this.popups = this.popups.filter((p) => {
+      const age = now - p.born;
+      if (age > lifespan) {
+        p.obj.destroy();
+        return false;
+      }
+      p.obj.y -= 0.5;
+      p.obj.setAlpha(1 - age / lifespan);
+      return true;
+    });
+  }
+
+  private spawnBurst(px: number, py: number, color: number, radius: number): void {
+    const circle = this.add.circle(px, py, 6, color, 0.5);
+    this.tweens.add({
+      targets: circle,
+      radius,
+      alpha: 0,
+      duration: 350,
+      ease: "Cubic.Out",
+      onComplete: () => circle.destroy(),
+    });
+  }
+
+  private spawnBanner(text: string): void {
+    const width = this.map.cols * CELL_SIZE;
+    const banner = this.add.text(width / 2, 60, text, {
+      fontSize: "22px",
+      color: "#ff5d5d",
+      fontStyle: "bold",
+    });
+    banner.setOrigin(0.5);
+    banner.setAlpha(0);
+    this.tweens.add({
+      targets: banner,
+      alpha: { from: 0, to: 1 },
+      duration: 200,
+      yoyo: true,
+      hold: 1400,
+      onComplete: () => banner.destroy(),
+    });
   }
 }
 

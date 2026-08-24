@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { registerNetworkListeners } from "./network/listeners";
-import { registerAudioListeners, unlockAudio, playUiClick } from "./audio";
+import { registerAudioListeners, unlockAudio, playUiClick, setAudioMuted } from "./audio";
 import { useGameStore } from "./state/gameStore";
 import HomeScreen from "./screens/HomeScreen";
 import LobbyScreen from "./screens/LobbyScreen";
@@ -16,11 +16,17 @@ export default function App() {
   const connected = useGameStore((s) => s.connected);
   const userId = useGameStore((s) => s.userId);
   const wallet = useGameStore((s) => s.wallet);
+  const [muted, setMuted] = useState(() => localStorage.getItem("monsterfall.muted") === "true");
 
   useEffect(() => {
     registerNetworkListeners();
     registerAudioListeners();
   }, []);
+
+  useEffect(() => {
+    setAudioMuted(muted);
+    localStorage.setItem("monsterfall.muted", String(muted));
+  }, [muted]);
 
   return (
     <div
@@ -41,6 +47,13 @@ export default function App() {
               <span>💎 {wallet.crystals}</span>
             </div>
           )}
+          <button
+            className="mute-toggle"
+            onClick={() => setMuted((m) => !m)}
+            title={muted ? "Unmute" : "Mute"}
+          >
+            {muted ? "🔇" : "🔊"}
+          </button>
           <span className={`connection-dot ${connected ? "connected" : ""}`} title={connected ? "Connected" : "Disconnected"} />
         </div>
       </header>

@@ -1,6 +1,7 @@
 import { getMonsterDefinition } from "@monsterfall/shared";
 import { useGameStore } from "../state/gameStore";
 import { socket } from "../network/socket";
+import { clearSavedLobbyCode } from "../network/session";
 import PhaserGame from "../game/PhaserGame";
 import MonsterSprite from "../components/MonsterSprite";
 import "./BattleScreen.css";
@@ -131,7 +132,14 @@ export default function BattleScreen() {
             ) : (
               <div style={{ color: "var(--danger)", fontWeight: 800, fontSize: 24 }}>DEFEAT</div>
             )}
-            <button className="primary" onClick={() => setScreen("home")}>
+            <button
+              className="primary"
+              onClick={() => {
+                socket.emit("lobby:leave");
+                clearSavedLobbyCode();
+                setScreen("home");
+              }}
+            >
               RETURN HOME
             </button>
           </div>

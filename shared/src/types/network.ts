@@ -12,6 +12,7 @@ export interface ClientToServerEvents {
   "lobby:ready": (payload: { ready: boolean }) => void;
   "lobby:selectTeam": (payload: { instanceIds: string[] }) => void;
   "lobby:start": () => void;
+  "lobby:leave": () => void;
 
   "battle:placeMonster": (payload: { instanceId: string; x: number; y: number }) => void;
   "battle:setTargetingMode": (payload: { placementId: string; mode: TargetingMode }) => void;

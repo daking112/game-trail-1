@@ -10,3 +10,7 @@ export function unlockAudio(): void {
 export function playUiClick(): void {
   audioManager.play("uiClick");
 }
+
+export function setAudioMuted(muted: boolean): void {
+  audioManager.setMuted(muted);
+}

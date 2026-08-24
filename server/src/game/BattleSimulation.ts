@@ -336,6 +336,8 @@ export class BattleSimulation {
             sourceId: monster.placementId,
             targetId: target.enemy.enemyInstanceId,
             damage: dmg,
+            x: target.position.x,
+            y: target.position.y,
           });
         } else {
           monster.attackCooldownRemaining = 0.1;

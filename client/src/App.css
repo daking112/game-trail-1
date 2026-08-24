@@ -113,3 +113,10 @@
   font-weight: 700;
   color: var(--text-dim);
 }
+
+.mute-toggle {
+  padding: 4px 8px;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 5px;
+}

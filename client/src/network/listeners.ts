@@ -1,5 +1,6 @@
 import { socket } from "./socket";
 import { useGameStore } from "../state/gameStore";
+import { clearSavedLobbyCode, getSavedLobbyCode, getSavedUsername, saveLobbyCode } from "./session";
 
 let registered = false;
 
@@ -10,15 +11,32 @@ export function registerNetworkListeners(): void {
 
   const store = useGameStore.getState;
 
-  socket.on("connect", () => useGameStore.setState({ connected: true }));
+  // Fires on the first connection and on every automatic reconnect, so a
+  // dropped connection or a page refresh both rejoin whatever lobby/battle
+  // the player was last in.
+  socket.on("connect", () => {
+    useGameStore.setState({ connected: true });
+    const username = getSavedUsername();
+    const lobbyCode = getSavedLobbyCode();
+    if (username && lobbyCode) {
+      socket.emit("lobby:join", { lobbyCode, username });
+    } else if (username) {
+      socket.emit("player:identify", { username });
+    }
+  });
   socket.on("disconnect", () => useGameStore.setState({ connected: false }));
 
   socket.on("self:identify", ({ userId, username }) => store().setSelf(userId, username));
   socket.on("lobby:update", ({ lobby }) => {
     store().setLobby(lobby);
+    saveLobbyCode(lobby.lobbyCode);
     if (lobby.started) store().setScreen("battle");
+    else if (store().screen !== "lobby") store().setScreen("lobby");
   });
-  socket.on("lobby:error", ({ message }) => store().setLobbyError(message));
+  socket.on("lobby:error", ({ message }) => {
+    store().setLobbyError(message);
+    clearSavedLobbyCode();
+  });
   socket.on("collection:update", ({ monsters }) => store().setCollection(monsters));
   socket.on("codex:update", ({ entries }) => store().setCodex(entries));
   socket.on("wallet:update", ({ wallet }) => store().setWallet(wallet));

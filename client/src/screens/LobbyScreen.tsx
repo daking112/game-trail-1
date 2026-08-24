@@ -1,4 +1,5 @@
 import { socket } from "../network/socket";
+import { clearSavedLobbyCode } from "../network/session";
 import { useGameStore } from "../state/gameStore";
 
 export default function LobbyScreen() {
@@ -7,6 +8,12 @@ export default function LobbyScreen() {
   const userId = useGameStore((s) => s.userId);
   const setScreen = useGameStore((s) => s.setScreen);
   const collection = useGameStore((s) => s.collection);
+
+  function leave() {
+    socket.emit("lobby:leave");
+    clearSavedLobbyCode();
+    setScreen("home");
+  }
 
   if (!lobby) {
     return (
@@ -88,7 +95,7 @@ export default function LobbyScreen() {
           )}
         </div>
         {lobbyError && <div style={{ color: "var(--danger)", marginTop: 10, fontSize: 13 }}>{lobbyError}</div>}
-        <button style={{ width: "100%", marginTop: 14 }} onClick={() => setScreen("home")}>
+        <button style={{ width: "100%", marginTop: 14 }} onClick={leave}>
           LEAVE
         </button>
       </div>

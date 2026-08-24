@@ -14,6 +14,7 @@ type AppServer = Server<ClientToServerEvents, ServerToClientEvents>;
 type AppSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 
 const STARTER_GRANT_COUNT = 3;
+const RECONNECT_GRACE_MS = 20_000;
 
 async function ensureStarterMonsters(repository: GameRepository, userId: string): Promise<MonsterInstance[]> {
   let collection = await repository.getCollection(userId);
@@ -173,18 +174,36 @@ export function registerSocketHandlers(io: AppServer, repository: GameRepository
       socket.emit("codex:update", { entries: await repository.getCodex(playerId) });
     });
 
-    socket.on("disconnect", () => {
+    socket.on("lobby:leave", () => {
       if (!lobbyCode || !playerId) return;
       const lobby = lobbyManager.getLobby(lobbyCode);
       if (!lobby) return;
       lobby.removePlayer(playerId);
-      if (lobby.players.length === 0) {
-        battleRooms.get(lobbyCode)?.stop();
-        battleRooms.delete(lobbyCode);
-        lobbyManager.removeLobby(lobbyCode);
-      } else {
-        broadcastLobby(lobbyCode);
-      }
+      cleanupIfEmpty(lobbyCode, lobby);
+      lobbyCode = null;
     });
+
+    socket.on("disconnect", () => {
+      if (!lobbyCode || !playerId) return;
+      const lobby = lobbyManager.getLobby(lobbyCode);
+      if (!lobby) return;
+      const code = lobbyCode;
+      const pid = playerId;
+      // Grace period so a page refresh or brief network drop doesn't evict
+      // the player -- if they reconnect and rejoin before this fires, the
+      // removal is cancelled inside Lobby.addPlayer.
+      lobby.scheduleRemoval(pid, RECONNECT_GRACE_MS, () => cleanupIfEmpty(code, lobby));
+    });
+
+    function cleanupIfEmpty(code: string, lobby: ReturnType<LobbyManager["getLobby"]>) {
+      if (!lobby) return;
+      if (lobby.players.length === 0) {
+        battleRooms.get(code)?.stop();
+        battleRooms.delete(code);
+        lobbyManager.removeLobby(code);
+      } else {
+        broadcastLobby(code);
+      }
+    }
   });
 }
