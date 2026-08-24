@@ -55,6 +55,12 @@ restart) — fine for local play and testing.
 - `npm run dev:server` / `npm run dev:client` — run each app in watch mode.
 - `npm run build` — typecheck + build shared, server, and client.
 - `npm run typecheck` — typecheck all workspaces without emitting.
+- `npm test` — run the unit tests for `shared` and `server` (Node's built-in
+  test runner via `tsx --test`). Covers the elemental effectiveness table,
+  capture-chance math, damage/attack-speed/cooldown calculations, XP
+  leveling and evolution eligibility, and target-selection for every
+  targeting mode — the "every major system should be testable
+  independently" systems called out in the design brief.
 
 ## Gameplay notes
 
