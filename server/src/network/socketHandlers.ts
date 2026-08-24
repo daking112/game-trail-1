@@ -1,9 +1,11 @@
 import { Server, Socket } from "socket.io";
 import {
   ClientToServerEvents,
+  EggType,
   MonsterInstance,
   ServerToClientEvents,
   STARTER_MONSTER_IDS,
+  TargetingMode,
 } from "@monsterfall/shared";
 import { GameRepository } from "../database/repository";
 import { LobbyManager } from "../rooms/LobbyManager";
@@ -132,6 +134,7 @@ export function registerSocketHandlers(io: AppServer, repository: GameRepository
 
     socket.on("battle:setTargetingMode", ({ placementId, mode }) => {
       if (!lobbyCode) return;
+      if (!Object.values(TargetingMode).includes(mode)) return;
       battleRooms.get(lobbyCode)?.setTargetingMode(placementId, mode);
     });
 
@@ -157,6 +160,7 @@ export function registerSocketHandlers(io: AppServer, repository: GameRepository
 
     socket.on("shop:purchaseEgg", async ({ eggType }) => {
       if (!playerId) return;
+      if (!Object.values(EggType).includes(eggType)) return;
       const wallet = await repository.getWallet(playerId);
       const { canAfford, cost } = checkEggAffordability(eggType, wallet);
       if (!canAfford) {

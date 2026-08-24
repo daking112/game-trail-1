@@ -1,10 +1,14 @@
+import { Suspense, lazy } from "react";
 import { getMonsterDefinition } from "@monsterfall/shared";
 import { useGameStore } from "../state/gameStore";
 import { socket } from "../network/socket";
 import { clearSavedLobbyCode } from "../network/session";
-import PhaserGame from "../game/PhaserGame";
 import MonsterSprite from "../components/MonsterSprite";
 import "./BattleScreen.css";
+
+// Phaser is a large dependency (~1.6MB) that only the battle screen needs,
+// so it's split into its own chunk and loaded on demand.
+const PhaserGame = lazy(() => import("../game/PhaserGame"));
 
 export default function BattleScreen() {
   const snapshot = useGameStore((s) => s.battleSnapshot);
@@ -25,7 +29,9 @@ export default function BattleScreen() {
   return (
     <div className="battle-layout">
       <div className="battle-canvas-wrap">
-        <PhaserGame />
+        <Suspense fallback={<div className="battle-canvas-loading">Loading battlefield…</div>}>
+          <PhaserGame />
+        </Suspense>
         {snapshot && (
           <div className="wave-banner">
             {snapshot.gameState === "BATTLE_PREPARATION" && `PREPARE — WAVE ${snapshot.currentWave} / ${snapshot.totalWaves} (${Math.ceil(snapshot.waveTimer)}s)`}

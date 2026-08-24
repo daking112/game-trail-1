@@ -19,6 +19,16 @@
   display: block;
 }
 
+.battle-canvas-loading {
+  width: 522px;
+  height: 522px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
 .wave-banner {
   position: absolute;
   top: 10px;
