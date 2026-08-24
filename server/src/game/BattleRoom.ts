@@ -41,6 +41,7 @@ export class BattleRoom {
   ) {
     this.simulation = new BattleSimulation(VERDANT_FOREST_MAP, VERDANT_FOREST_WAVES, {
       onEvent: (event) => this.io.to(this.roomId).emit("battle:event", event),
+      onWaveStart: (wave, totalWaves) => this.io.to(this.roomId).emit("battle:waveStart", { wave, totalWaves }),
       onWaveComplete: (wave) => this.handleWaveComplete(wave),
       onVictory: (gold, xp) => this.handleBattleEnd(true, gold, xp),
       onDefeat: (xp) => this.handleBattleEnd(false, 0, xp),

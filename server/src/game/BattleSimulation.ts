@@ -46,6 +46,7 @@ export interface PlaceMonsterParams {
 
 export interface BattleSimulationCallbacks {
   onEvent: (event: CombatEvent) => void;
+  onWaveStart: (wave: number, totalWaves: number) => void;
   onWaveComplete: (wave: number) => void;
   onVictory: (goldEarned: number, xpAwarded: Record<string, number>) => void;
   onDefeat: (xpAwarded: Record<string, number>) => void;
@@ -220,6 +221,7 @@ export class BattleSimulation {
     this.spawnSchedule = buildSpawnSchedule(wave);
     this.waveSpawnElapsed = 0;
     this.spawnCursor = 0;
+    this.callbacks.onWaveStart(this.currentWave, this.waves.length);
   }
 
   private updateSpawning(dt: number): void {
@@ -234,7 +236,7 @@ export class BattleSimulation {
       this.spawnCursor += 1;
       const def = getEnemyDefinition(entry.enemyId);
       const maxHealth = Math.round(def.baseHealth * waveMultiplier);
-      this.enemies.push({
+      const spawned: EnemyState = {
         enemyInstanceId: uuid(),
         enemyId: def.id,
         pathIndex: 0,
@@ -246,7 +248,12 @@ export class BattleSimulation {
         slowUntil: 0,
         slowPercent: 0,
         isBoss: !!def.isBoss,
-      });
+      };
+      this.enemies.push(spawned);
+      if (spawned.isBoss) {
+        const pos = this.map.path[0];
+        this.callbacks.onEvent({ type: "bossSpawn", targetId: spawned.enemyInstanceId, x: pos.x, y: pos.y });
+      }
     }
   }
 

@@ -68,7 +68,7 @@ export interface BattleStateSnapshot {
 }
 
 export interface CombatEvent {
-  type: "attack" | "ability" | "ultimate" | "death" | "coreHit" | "capture";
+  type: "attack" | "ability" | "ultimate" | "death" | "coreHit" | "capture" | "bossSpawn";
   sourceId?: string;
   targetId?: string;
   damage?: number;

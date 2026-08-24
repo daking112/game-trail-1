@@ -14,6 +14,7 @@ export default function CodexScreen() {
         <button onClick={() => setScreen("home")}>← HOME</button>
         <button onClick={() => setScreen("collection")}>MY MONSTERS</button>
         <button className="active">CODEX</button>
+        <button onClick={() => setScreen("hatchery")}>HATCHERY</button>
       </div>
 
       <div

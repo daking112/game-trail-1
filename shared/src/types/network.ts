@@ -1,7 +1,7 @@
 import { TargetingMode } from "./ability";
 import { BattleStateSnapshot, CombatEvent } from "./battle";
 import { CodexEntry } from "./codex";
-import { CurrencyWallet } from "./economy";
+import { CurrencyWallet, EggType } from "./economy";
 import { LobbyState } from "./lobby";
 import { MonsterInstance } from "./monster";
 
@@ -18,6 +18,8 @@ export interface ClientToServerEvents {
   "battle:activateAbility": (payload: { placementId: string }) => void;
   "battle:activateUltimate": (payload: { placementId: string }) => void;
   "battle:capture": (payload: { encounterId: string }) => void;
+
+  "shop:purchaseEgg": (payload: { eggType: EggType }) => void;
 }
 
 export interface ServerToClientEvents {
@@ -42,4 +44,12 @@ export interface ServerToClientEvents {
     captureChance: number;
   }) => void;
   "battle:captureResult": (payload: { success: boolean; monsterId: string; instanceId?: string }) => void;
+
+  "shop:eggResult": (payload: {
+    success: boolean;
+    message?: string;
+    eggType: EggType;
+    monsterId?: string;
+    instanceId?: string;
+  }) => void;
 }

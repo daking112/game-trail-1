@@ -16,7 +16,7 @@ export default function HomeScreen() {
     localStorage.setItem(USERNAME_KEY, name);
   }
 
-  function identifyAndGo(target: "collection" | "codex") {
+  function identifyAndGo(target: "collection" | "codex" | "hatchery") {
     if (username.trim()) socket.emit("player:identify", { username: username.trim() });
     setScreen(target);
   }
@@ -57,6 +57,9 @@ export default function HomeScreen() {
             CODEX
           </button>
         </div>
+        <button style={{ width: "100%", marginBottom: 14 }} onClick={() => identifyAndGo("hatchery")} disabled={!username.trim()}>
+          🥚 HATCHERY
+        </button>
 
         <hr style={{ border: "none", borderTop: "1px solid var(--border)", margin: "16px 0" }} />
 

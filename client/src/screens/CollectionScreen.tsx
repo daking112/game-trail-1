@@ -15,6 +15,7 @@ export default function CollectionScreen() {
         <button onClick={() => setScreen("home")}>← HOME</button>
         <button className="active">MY MONSTERS</button>
         <button onClick={() => setScreen("codex")}>CODEX</button>
+        <button onClick={() => setScreen("hatchery")}>HATCHERY</button>
       </div>
 
       <div

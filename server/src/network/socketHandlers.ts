@@ -8,6 +8,7 @@ import {
 import { GameRepository } from "../database/repository";
 import { LobbyManager } from "../rooms/LobbyManager";
 import { BattleRoom } from "../game/BattleRoom";
+import { checkEggAffordability, rollEggHatch } from "../systems/shop";
 
 type AppServer = Server<ClientToServerEvents, ServerToClientEvents>;
 type AppSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -150,6 +151,25 @@ export function registerSocketHandlers(io: AppServer, repository: GameRepository
       await room.resolveCapture(playerId, encounterId);
       const monsters = await repository.getCollection(playerId);
       socket.emit("collection:update", { monsters });
+      socket.emit("codex:update", { entries: await repository.getCodex(playerId) });
+    });
+
+    socket.on("shop:purchaseEgg", async ({ eggType }) => {
+      if (!playerId) return;
+      const wallet = await repository.getWallet(playerId);
+      const { canAfford, cost } = checkEggAffordability(eggType, wallet);
+      if (!canAfford) {
+        socket.emit("shop:eggResult", { success: false, eggType, message: "Not enough currency" });
+        return;
+      }
+      await repository.addCurrency(playerId, { gold: -(cost.gold ?? 0), crystals: -(cost.crystals ?? 0) });
+      const monsterId = rollEggHatch(eggType);
+      const instance = await repository.addMonsterToCollection(playerId, monsterId);
+      await repository.markCodexCaptured(playerId, monsterId);
+
+      socket.emit("shop:eggResult", { success: true, eggType, monsterId, instanceId: instance.instanceId });
+      socket.emit("wallet:update", { wallet: await repository.getWallet(playerId) });
+      socket.emit("collection:update", { monsters: await repository.getCollection(playerId) });
       socket.emit("codex:update", { entries: await repository.getCodex(playerId) });
     });
 

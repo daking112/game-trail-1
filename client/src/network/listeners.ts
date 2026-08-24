@@ -37,5 +37,7 @@ export function registerNetworkListeners(): void {
     store().setCaptureOffer(null);
   });
 
+  socket.on("shop:eggResult", (result) => store().setEggResult(result));
+
   socket.connect();
 }

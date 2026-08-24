@@ -4,11 +4,12 @@ import {
   CodexEntry,
   CombatEvent,
   CurrencyWallet,
+  EggType,
   LobbyState,
   MonsterInstance,
 } from "@monsterfall/shared";
 
-export type Screen = "home" | "lobby" | "collection" | "monsterDetail" | "codex" | "battle";
+export type Screen = "home" | "lobby" | "collection" | "monsterDetail" | "codex" | "battle" | "hatchery";
 
 export interface CaptureOffer {
   encounterId: string;
@@ -20,6 +21,14 @@ export interface CaptureOffer {
 export interface CaptureResultPayload {
   success: boolean;
   monsterId: string;
+  instanceId?: string;
+}
+
+export interface EggResultPayload {
+  success: boolean;
+  eggType: EggType;
+  message?: string;
+  monsterId?: string;
   instanceId?: string;
 }
 
@@ -40,6 +49,7 @@ interface GameStoreState {
   captureOffer: CaptureOffer | null;
   captureResult: CaptureResultPayload | null;
   battleResult: { type: "victory" | "defeat"; goldEarned?: number; xpAwarded?: Record<string, number> } | null;
+  eggResult: EggResultPayload | null;
 
   setScreen: (screen: Screen) => void;
   setConnected: (connected: boolean) => void;
@@ -56,6 +66,7 @@ interface GameStoreState {
   setCaptureOffer: (offer: CaptureOffer | null) => void;
   setCaptureResult: (result: CaptureResultPayload | null) => void;
   setBattleResult: (result: GameStoreState["battleResult"]) => void;
+  setEggResult: (result: EggResultPayload | null) => void;
   resetBattle: () => void;
 }
 
@@ -76,6 +87,7 @@ export const useGameStore = create<GameStoreState>((set) => ({
   captureOffer: null,
   captureResult: null,
   battleResult: null,
+  eggResult: null,
 
   setScreen: (screen) => set({ screen }),
   setConnected: (connected) => set({ connected }),
@@ -93,6 +105,7 @@ export const useGameStore = create<GameStoreState>((set) => ({
   setCaptureOffer: (captureOffer) => set({ captureOffer }),
   setCaptureResult: (captureResult) => set({ captureResult }),
   setBattleResult: (battleResult) => set({ battleResult }),
+  setEggResult: (eggResult) => set({ eggResult }),
   resetBattle: () =>
     set({
       battleSnapshot: null,
