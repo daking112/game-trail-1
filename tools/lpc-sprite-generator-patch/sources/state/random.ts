@@ -201,6 +201,7 @@ const MODE_KEYWORDS: Record<RandomMode, string[]> = {
     "fur",
     "undead",
     "skeleton",
+    "zombie",
     "creature",
     "animal",
   ],
@@ -266,15 +267,20 @@ function score(
   if ((mode === "creature" || mode === "monster") && /human/.test(text)) n -= 8;
   if (
     mode === "monster" &&
-    /horn|fang|claw|wing|tail|scale|demon|skeleton/.test(text)
+    /horn|fang|claw|wing|tail|scale|demon|skeleton|zombie/.test(text)
   )
     n += 7;
+  if (
+    ["human", "warrior", "mage", "ranger"].includes(mode) &&
+    /skeleton|zombie/.test(text)
+  )
+    n -= 8;
   return Math.max(0.05, n);
 }
-function weighted(
-  a: { item: ItemMerged; row: SlimByTypeNameRow; score: number }[],
+function weighted<T extends { score: number }>(
+  a: T[],
   rng: () => number,
-) {
+): T | null {
   if (!a.length) return null;
   const total = a.reduce((s, x) => s + x.score, 0);
   let r = rng() * total;
@@ -318,6 +324,44 @@ function choose(
   }
   return weighted(a, rng);
 }
+type BodyChoice = {
+  item: ItemMerged;
+  row: SlimByTypeNameRow;
+  score: number;
+  bodyTypes: string[];
+};
+/**
+ * Picks the base body shape itself (e.g. the plain human body vs. the
+ * skeleton/zombie bodies), not just a color variant of it — this is what
+ * lets "monster"/"chaos" modes produce non-humanoid results instead of a
+ * human body with monster parts stuck on it.
+ */
+function chooseBody(
+  catalog: CatalogReader,
+  rows: SlimByTypeNameRow[],
+  anim: string,
+  mode: RandomMode,
+  prompt: string,
+  rng: () => number,
+): BodyChoice | null {
+  const a: BodyChoice[] = [];
+  for (const row of rows) {
+    const item = catalog.getItemMerged(row.itemId).unwrapOr(null);
+    if (!item) continue;
+    const bodyTypes = Object.keys(item.layers?.layer_1 ?? {}).filter(
+      (k) => k !== "zPos" && k !== "custom_animation",
+    );
+    if (!bodyTypes.length) continue;
+    if (item.animations?.length && !item.animations.includes(anim)) continue;
+    a.push({
+      item,
+      row,
+      score: score(item, row, mode, prompt, row.type_name),
+      bodyTypes,
+    });
+  }
+  return weighted(a, rng);
+}
 function useGroup(group: string, mode: RandomMode, rng: () => number): boolean {
   if (OPTIONAL.has(group)) return rng() < (mode === "chaos" ? 0.55 : 0.28);
   if (COMMON.has(group)) return rng() < (mode === "chaos" ? 0.9 : 0.72);
@@ -334,12 +378,28 @@ export async function randomizeCharacter(
   const rng = rngFrom(options.seed),
     mode = options.mode ?? "balanced",
     prompt = options.prompt ?? "";
-  const anim = state.selectedAnimation || "walk",
-    body = rng() < 0.5 ? "male" : "female";
+  const anim = state.selectedAnimation || "walk";
+  const bodyChoice = chooseBody(
+    catalog,
+    indexes.byTypeName?.body ?? [],
+    anim,
+    mode,
+    prompt,
+    rng,
+  );
+  const body = pick(bodyChoice?.bodyTypes ?? ["male", "female"], rng) ?? "male";
   state.bodyType = body;
   state.selections = {};
-  const base = catalog.getItemMerged("body").unwrapOr(null);
-  if (base) selectItem(state, "body", variant(base, rng) || "light");
+  if (bodyChoice) {
+    selectItem(
+      state,
+      bodyChoice.row.itemId,
+      variant(bodyChoice.item, rng) || "light",
+    );
+  } else {
+    const base = catalog.getItemMerged("body").unwrapOr(null);
+    if (base) selectItem(state, "body", variant(base, rng) || "light");
+  }
   const head = choose(
     catalog,
     indexes.byTypeName?.head ?? [],
@@ -373,7 +433,7 @@ export async function randomizeCharacter(
     )
       continue;
     if (
-      body === "female" &&
+      ["female", "child", "teen"].includes(body) &&
       ["beard", "mustache"].includes(group) &&
       rng() > 0.04
     )

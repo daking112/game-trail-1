@@ -49,8 +49,24 @@ https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generat
 - "Generate 1" — randomizes and renders one character in the live preview
 - "Generate N + ZIP" (up to 100) — downloads a ZIP with `random_NNN.png`,
   `random_NNN.json` per character, plus `manifest.json` and `credits.txt`
+- Randomizes the base **body shape itself** — not just skin-tone color —
+  including the catalog's skeleton and zombie bodies, plus male / female /
+  teen / child / muscular / pregnant body types. "Monster" and "Chaos"
+  modes are biased heavily toward skeleton/zombie bodies (and away from
+  them in "Human"/"Warrior"/"Mage"/"Ranger" modes), so you get genuinely
+  non-humanoid results instead of always a human body with monster parts
+  glued on.
 
 The design brief is local keyword matching only — no cloud AI involved.
+
+## Known limitation
+
+This generator's whole catalog is built around one humanoid skeleton/rig
+(bipedal, two arms). It does not include true quadruped or wildly
+different body shapes (e.g. a four-legged beast) — the "monster" feel
+comes from combining the zombie/skeleton bodies with animal heads, ears,
+horns, wings, and tails, not from different body rigs. Real quadruped
+bodies would require new pixel art, not just recombining what's here.
 
 ## Known non-issue
 
