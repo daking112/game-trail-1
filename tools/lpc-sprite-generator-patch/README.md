@@ -56,6 +56,18 @@ https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generat
   them in "Human"/"Warrior"/"Mage"/"Ranger" modes), so you get genuinely
   non-humanoid results instead of always a human body with monster parts
   glued on.
+- Draws from 17 additional catalog categories the randomizer previously
+  never touched: gore/battle-damage overlays (severed arm, exposed ribs,
+  brain, missing eyes, torn mouth), bandages, chainmail, a wheelchair,
+  and various small accessories (rings, earrings, wrist cuffs, buckles,
+  ammo, bandanas, hair ties, helmet accessories). The gore/wound pieces
+  are treated as rare, and are biased toward Monster/Chaos modes and away
+  from Human/Warrior/Mage/Ranger modes, same as the skeleton/zombie
+  bodies above. (A further ~40 catalog categories were deliberately left
+  out — they're overlay/trim pieces that only look right paired with one
+  specific parent item, like a wing color-pattern that only fits one wing
+  style, or a sleeve trim that only fits one dress — randomizing those
+  independently would produce visibly disconnected/floating pieces.)
 
 The design brief is local keyword matching only — no cloud AI involved.
 

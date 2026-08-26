@@ -87,6 +87,28 @@ const RANDOM_GROUPS = [
   "tools",
   "prosthesis_hand",
   "prosthesis_leg",
+  // Previously-unused catalog categories (standalone items only — deliberately
+  // excludes overlay/trim slots that only make visual sense paired with one
+  // specific parent item, e.g. wings_dots (Monarch wings only) or
+  // dress_sleeves (kimono only), since randomizing those independently would
+  // produce disconnected/floating pieces.
+  "accessory",
+  "ammo",
+  "bandages",
+  "bandana",
+  "buckles",
+  "chainmail",
+  "earrings",
+  "hairtie",
+  "ring",
+  "wheelchair",
+  "wound_arm",
+  "wound_brain",
+  "wound_eye_left",
+  "wound_eye_right",
+  "wound_mouth",
+  "wound_ribs",
+  "wrists",
 ];
 
 const MODE_KEYWORDS: Record<RandomMode, string[]> = {
@@ -202,6 +224,9 @@ const MODE_KEYWORDS: Record<RandomMode, string[]> = {
     "undead",
     "skeleton",
     "zombie",
+    "wound",
+    "gore",
+    "bandage",
     "creature",
     "animal",
   ],
@@ -210,6 +235,14 @@ const MODE_KEYWORDS: Record<RandomMode, string[]> = {
 const OPTIONAL = new Set([
   "beard",
   "mustache",
+  "bandages",
+  "wheelchair",
+  "wound_arm",
+  "wound_brain",
+  "wound_eye_left",
+  "wound_eye_right",
+  "wound_mouth",
+  "wound_ribs",
   "eyebrows",
   "expression",
   "eyes",
@@ -272,7 +305,7 @@ function score(
     n += 7;
   if (
     ["human", "warrior", "mage", "ranger"].includes(mode) &&
-    /skeleton|zombie/.test(text)
+    /skeleton|zombie|wound/.test(text)
   )
     n -= 8;
   return Math.max(0.05, n);
